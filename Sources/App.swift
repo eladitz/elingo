@@ -39,6 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildMenus()
         if devCommand() { return }
+        // Finder's right-click ▸ Translate with Elingo (under Quick Actions or Services).
+        NSApp.servicesProvider = self
+        NSUpdateDynamicServices()
         Donation.usageLine = { "You've saved \($0) documents with it so far." }
         Donation.start()
         Updater.start()
@@ -85,6 +88,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                                                                              drop: { [weak self] urls in self?.open(urls) }))
     }
 
+    @objc func translateFiles(_ pasteboard: NSPasteboard, userData: String?, error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL] ?? []
+        openedFiles = true
+        open(urls)
+    }
+
     @objc func website(_ sender: Any?) { NSWorkspace.shared.open(URL(string: "https://ai.itzkin.com/elingo.html")!) }
     @objc func donate(_ sender: Any?) { NSWorkspace.shared.open(Donation.page) }
     @objc func checkForUpdates(_ sender: Any?) { Task { await Updater.check(manual: true) } }
@@ -125,11 +134,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let box = page.bounds(for: .mediaBox)
                 page.addAnnotation(SignatureAnnotation(image: image, bounds: CGRect(x: box.maxX - 230, y: box.minY + 60, width: 170, height: 170 * image.size.height / image.size.width)))
             }
+            // ELINGO_TEXT="Muster|✓": text boxes down the first page, as if typed with the Text tool.
+            if let texts = ProcessInfo.processInfo.environment["ELINGO_TEXT"], let page = doc.page(at: 0) {
+                for (n, text) in texts.split(separator: "|").enumerated() {
+                    page.addAnnotation(TextBoxes.make(String(text), at: CGPoint(x: 205, y: 667 - CGFloat(n) * 40), size: 12, color: .black))
+                }
+            }
             do { try Signatures.writeLocked(doc, to: URL(fileURLWithPath: args[i + 2]), title: "Test") } catch { print(error); exit(1) }
             exit(0)
         }
         if let i = args.firstIndex(of: "--snapshot"), i + 2 < args.count {
             Workspace.open(args[(i + 2)...].map { URL(fileURLWithPath: $0) })
+            if let text = ProcessInfo.processInfo.environment["ELINGO_PLACE"] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { Workspace.current?.model?.addTestText(text) }
+            }
             // ELINGO_ZOOM=2: zoom by that much just before the capture, to check zooming and the sync.
             if let factor = ProcessInfo.processInfo.environment["ELINGO_ZOOM"].flatMap(Double.init) {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { Workspace.current?.model?.zoom(by: factor) }

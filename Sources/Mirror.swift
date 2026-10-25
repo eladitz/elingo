@@ -34,7 +34,7 @@ final class MirrorPage: PDFPage {
     override func draw(with box: PDFDisplayBox, to context: CGContext) {
         original.draw(with: box, to: context)
         if drawsAnnotations {
-            for annotation in original.annotations where annotation.type == "Widget" || annotation is SignatureAnnotation {
+            for annotation in original.annotations where annotation.type == "Widget" || annotation.type == "FreeText" || annotation is SignatureAnnotation {
                 annotation.draw(with: box, in: context)
             }
         }

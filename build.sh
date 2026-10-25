@@ -34,6 +34,15 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSHumanReadableCopyright</key><string>Elad Itzkin</string>
+    <key>NSServices</key>
+    <array>
+        <dict>
+            <key>NSMenuItem</key><dict><key>default</key><string>Translate with Elingo</string></dict>
+            <key>NSMessage</key><string>translateFiles</string>
+            <key>NSRequiredContext</key><dict/>
+            <key>NSSendFileTypes</key><array><string>com.adobe.pdf</string></array>
+        </dict>
+    </array>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -47,5 +56,14 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+# Signed with the private certificate from ../make-signing-identity.sh when it's there, so macOS keeps its
+# permissions for the app across updates; otherwise ad hoc (which macOS treats as a new app every build).
+SIGNING="$HOME/Library/Application Support/Itzkin Signing"
+if [[ -f "$SIGNING/identity" ]]; then
+    KEYCHAIN=$(ls "$SIGNING"/signing.keychain* | head -1)
+    security unlock-keychain -p "$(cat "$SIGNING/password")" "$KEYCHAIN"
+    codesign --force --keychain "$KEYCHAIN" --sign "$(cat "$SIGNING/identity")" "$APP"
+else
+    codesign --force --sign - "$APP"
+fi
 echo "Built $APP"
