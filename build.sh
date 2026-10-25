@@ -9,7 +9,7 @@ BUILD=${BUILD:-$(git rev-list --count HEAD 2>/dev/null || echo 1)}   # must grow
 FLAGS=()
 [[ $MODE != direct ]] && FLAGS=(-D APPSTORE)
 cd "$(dirname "$0")"
-VERSION=1.0.0
+VERSION=1.1.0
 APP=build/Elingo.app
 rm -rf "$APP" build/Elingo.iconset
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
