@@ -7,6 +7,15 @@ import PDFKit
 
 let accent = Color(red: 0.22, green: 0.45, blue: 0.95)
 
+/// Built for the Mac App Store (`./build.sh appstore`): sandboxed, and the Store does the updating.
+enum Distribution {
+    #if APPSTORE
+    static let appStore = true
+    #else
+    static let appStore = false
+    #endif
+}
+
 @MainActor
 enum Windows {
     private static var open: [NSWindow] = []
@@ -44,7 +53,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSUpdateDynamicServices()
         Donation.usageLine = { "You've saved \($0) documents with it so far." }
         Donation.start()
-        Updater.start()
+        #if !APPSTORE
+        Updater.start()   // the App Store does the updating there
+        #endif
         // Files double-clicked or dropped on the icon arrive just after launch; only greet if none did.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self, !self.openedFiles else { return }
@@ -169,9 +180,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func buildMenus() {
         let main = NSMenu()
-        func add(_ title: String, _ items: [NSMenuItem]) -> NSMenu {
+        func add(_ title: String, _ items: [NSMenuItem?]) -> NSMenu {
             let menu = NSMenu(title: title)
-            items.forEach(menu.addItem)
+            items.compactMap { $0 }.forEach(menu.addItem)
             let holder = NSMenuItem()
             holder.submenu = menu
             main.addItem(holder)
@@ -185,7 +196,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         _ = add("Elingo", [
             item("About Elingo", #selector(NSApplication.orderFrontStandardAboutPanel(_:))),
-            item("Check for Updates…", #selector(checkForUpdates(_:)), target: self),
+            Distribution.appStore ? nil : item("Check for Updates…", #selector(checkForUpdates(_:)), target: self),
             .separator(),
             item("Elingo Website", #selector(website(_:)), target: self),
             item("Support Elingo on Ko-fi…", #selector(donate(_:)), target: self),
