@@ -968,3 +968,36 @@ struct TranslatePDFView: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+// MARK: - Tour (for App Review's screen recording)
+
+extension TranslateModel {
+    /// Types `text` onto the first page at `point`, as the Text tool would.
+    func tourType(_ text: String, at point: CGPoint) {
+        guard let page = original.page(at: 0) else { return }
+        let box = TextBoxes.make(text, at: point, size: 12, color: .black)
+        page.addAnnotation(box)
+        selected = box
+        left.annotationsChanged(on: page)
+        redrawMirror()
+    }
+
+    /// Places a typed signature on the first page at `point`.
+    func tourSign(_ name: String, at point: CGPoint) {
+        guard let page = original.page(at: 0),
+              let image = Signatures.image(typed: name, color: Ink.swatches[0].color) else { return }
+        putSignature(image, on: page, at: point)
+    }
+
+    /// Saves the signed & locked copy to `url` (no save panel), and says so.
+    func tourSaveLocked(to url: URL) {
+        try? FileManager.default.removeItem(at: url)
+        do {
+            try Signatures.writeLocked(original, to: url, title: url.deletingPathExtension().lastPathComponent)
+            status = "Saved \(url.lastPathComponent): answers and signature are part of the pages now, and the file is locked against editing."
+            signedCopy = url
+        } catch {
+            status = error.localizedDescription
+        }
+    }
+}

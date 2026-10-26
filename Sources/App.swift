@@ -121,6 +121,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ///   --snapshot <out.png> <in.pdf>...           open the window, then capture it
     private func devCommand() -> Bool {
         let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--tour"), i + 2 < args.count {
+            Tour.run(form: URL(fileURLWithPath: args[i + 1]), output: URL(fileURLWithPath: args[i + 2]))
+            return true
+        }
         if let i = args.firstIndex(of: "--export"), i + 3 < args.count, let doc = PDFDocument(url: URL(fileURLWithPath: args[i + 1])) {
             Task {
                 let mirror = Mirror(doc)
