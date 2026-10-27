@@ -203,7 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Distribution.appStore ? nil : item("Check for Updates…", #selector(checkForUpdates(_:)), target: self),
             .separator(),
             item("Elingo Website", #selector(website(_:)), target: self),
-            item("Support Elingo on Ko-fi…", #selector(donate(_:)), target: self),
+            Donation.enabled ? item("Support Elingo on Ko-fi…", #selector(donate(_:)), target: self) : nil,
             .separator(),
             item("Hide Elingo", #selector(NSApplication.hide(_:)), "h"),
             item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option]),
